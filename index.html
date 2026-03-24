@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Listen & Choose Vocab</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 2rem auto; }
+    button { margin: 0.25rem 0; }
+    .options button { display: block; width: 100%; margin-bottom: 0.5rem; }
+    .feedback { margin-top: 1rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>Listen and choose</h1>
+
+  <button id="playBtn">Play word</button>
+
+  <div class="options" id="optionsContainer"></div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <script>
+    const words = [
+      { term: "apple", meaning: "a round fruit with red or green skin" },
+      { term: "banana", meaning: "a long curved yellow fruit" },
+      { term: "carrot", meaning: "an orange root vegetable" },
+      { term: "giraffe", meaning: "a tall African mammal with a very long neck" }
+    ];
+
+    let currentCorrect = null;
+
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(utterance);
+    }
+
+    function shuffle(array) {
+      return array.sort(() => Math.random() - 0.5);
+    }
+
+    function newQuestion() {
+      document.getElementById("feedback").textContent = "";
+      const optionsContainer = document.getElementById("optionsContainer");
+      optionsContainer.innerHTML = "";
+
+      // pick correct word
+      const correct = words[Math.floor(Math.random() * words.length)];
+      currentCorrect = correct;
+
+      // build options (terms or meanings depending on what you test)
+      const options = shuffle([...words]).slice(0, 3);
+      if (!options.includes(correct)) options[0] = correct; // ensure correct is present
+      const finalOptions = shuffle(options);
+
+      finalOptions.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.textContent = opt.term; // or opt.meaning
+        btn.onclick = () => {
+          if (opt.term === currentCorrect.term) {
+            document.getElementById("feedback").textContent = "Correct!";
+          } else {
+            document.getElementById("feedback").textContent =
+              `Try again. Correct answer: ${currentCorrect.term}`;
+          }
+        };
+        optionsContainer.appendChild(btn);
+      });
+
+      // speak the correct word automatically or wait for click
+      speak(correct.term);
+    }
+
+    document.getElementById("playBtn").addEventListener("click", () => {
+      if (!currentCorrect) {
+        newQuestion();
+      } else {
+        speak(currentCorrect.term);
+      }
+    });
+
+    // optional: start with a question
+    newQuestion();
+  </script>
+
+</body>
+</html>
