@@ -3,84 +3,145 @@
 <head>
   <meta charset="utf-8" />
   <title>Listen & Choose Vocab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; max-width: 500px; margin: 2rem auto; }
-    button { margin: 0.25rem 0; }
-    .options button { display: block; width: 100%; margin-bottom: 0.5rem; }
-    .feedback { margin-top: 1rem; font-weight: bold; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+      max-width: 500px; margin: 2rem auto; 
+      padding: 1rem; background: #f8f9fa; 
+    }
+    h1 { text-align: center; color: #333; }
+    .instructions { 
+      background: white; padding: 1rem; border-radius: 8px; 
+      margin-bottom: 1.5rem; text-align: center; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .vocab-list { list-style: none; padding: 0; }
+    .vocab-item { 
+      background: white; margin-bottom: 0.75rem; 
+      padding: 1rem; border-radius: 12px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;
+      transition: all 0.2s; font-size: 1.1rem; font-weight: 500;
+    }
+    .vocab-item:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .vocab-item.played { border-left: 5px solid #007bff; background: #e7f3ff; }
+    .vocab-item.correct { border-left-color: #28a745 !important; background: #d4edda !important; }
+    .vocab-item.incorrect { border-left-color: #dc3545 !important; background: #f8d7da !important; }
+    .vocab-text { margin: 0; color: #333; }
+    .play-icon { float: right; font-size: 1.2rem; color: #007bff; }
+    .feedback { 
+      margin-top: 1.5rem; padding: 1rem; border-radius: 8px; 
+      text-align: center; font-weight: bold; display: none;
+    }
+    .feedback.correct { background: #d4edda; color: #155724; }
+    .feedback.incorrect { background: #f8d7da; color: #721c24; }
+    .new-question { margin-top: 1rem; }
+    @media (max-width: 480px) { body { padding: 1rem; } }
   </style>
 </head>
 <body>
 
-  <h1>Listen and choose</h1>
+  <h1>Listen & Choose</h1>
+  
+  <div class="instructions">
+    Tap any vocab item to hear it. Tap again to select your answer!
+  </div>
 
-  <button id="playBtn">Play word</button>
-
-  <div class="options" id="optionsContainer"></div>
-
+  <ul class="vocab-list" id="vocabList"></ul>
+  
   <div class="feedback" id="feedback"></div>
 
   <script>
     const words = [
-      { term: "apple", meaning: "a round fruit with red or green skin" },
-      { term: "banana", meaning: "a long curved yellow fruit" },
-      { term: "carrot", meaning: "an orange root vegetable" },
-      { term: "giraffe", meaning: "a tall African mammal with a very long neck" }
+      { term: "biodiversity loss", meaning: "Plants, animals and their habitats are destroyed." },
+      { term: "fossil fuel", meaning: "Burning coal, oil and gas relases greenhouse gasses into the atmosphere." },
+      { term: "microplastic", meaning: "There are billions of these floating in the ocean." },
+      { term: "Smog", meaning: "Polluted air which is bad for our lungs" },
+      { term: "food waste", meaning: "Food that we throw away. This can rot and release greenhouse gasses." },
+      { term: "global warming", meaning: "The long-term rise in the earth's temperature and weather patterns." },
+      { term: "Overconsumption", meaning: "Using too much of the Earth's resources." },
+      { term: "Urban Growth", meaning: "Cities getting bigger and bigger." }
     ];
 
     let currentCorrect = null;
+    let isAnswered = false;
 
     function speak(text) {
       const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US'; // or 'en-GB'
+      utterance.rate = 0.9;
       speechSynthesis.speak(utterance);
     }
 
-    function shuffle(array) {
-      return array.sort(() => Math.random() - 0.5);
-    }
+    function showVocab() {
+      const list = document.getElementById('vocabList');
+      list.innerHTML = '';
 
-    function newQuestion() {
-      document.getElementById("feedback").textContent = "";
-      const optionsContainer = document.getElementById("optionsContainer");
-      optionsContainer.innerHTML = "";
+      const shuffled = [...words].sort(() => Math.random() - 0.5);
+      currentCorrect = shuffled[0]; // First one is always correct
 
-      // pick correct word
-      const correct = words[Math.floor(Math.random() * words.length)];
-      currentCorrect = correct;
-
-      // build options (terms or meanings depending on what you test)
-      const options = shuffle([...words]).slice(0, 3);
-      if (!options.includes(correct)) options[0] = correct; // ensure correct is present
-      const finalOptions = shuffle(options);
-
-      finalOptions.forEach(opt => {
-        const btn = document.createElement("button");
-        btn.textContent = opt.term; // or opt.meaning
-        btn.onclick = () => {
-          if (opt.term === currentCorrect.term) {
-            document.getElementById("feedback").textContent = "Correct!";
-          } else {
-            document.getElementById("feedback").textContent =
-              `Try again. Correct answer: ${currentCorrect.term}`;
-          }
-        };
-        optionsContainer.appendChild(btn);
+      shuffled.forEach(word => {
+        const li = document.createElement('li');
+        li.className = 'vocab-item';
+        li.innerHTML = `
+          <span class="vocab-text">${word.term}</span>
+          <span class="play-icon">🔊</span>
+        `;
+        
+        li.addEventListener('click', () => handleVocabClick(word));
+        list.appendChild(li);
       });
 
-      // speak the correct word automatically or wait for click
-      speak(correct.term);
+      document.getElementById('feedback').style.display = 'none';
+      isAnswered = false;
     }
 
-    document.getElementById("playBtn").addEventListener("click", () => {
-      if (!currentCorrect) {
-        newQuestion();
-      } else {
-        speak(currentCorrect.term);
-      }
-    });
+    function handleVocabClick(word) {
+      if (isAnswered) return;
 
-    // optional: start with a question
-    newQuestion();
+      const item = event.currentTarget;
+      
+      // First click: play sound
+      if (!item.classList.contains('played')) {
+        item.classList.add('played');
+        speak(word.term);
+        return;
+      }
+
+      // Second click: select as answer
+      isAnswered = true;
+      
+      if (word.term === currentCorrect.term) {
+        item.classList.add('correct');
+        showFeedback('Correct! 🎉', true);
+      } else {
+        item.classList.add('incorrect');
+        // Highlight the correct one
+        document.querySelectorAll('.vocab-item').forEach(el => {
+          if (el.querySelector('.vocab-text').textContent === currentCorrect.term) {
+            el.classList.add('correct');
+          }
+        });
+        showFeedback(`Try again. Correct is "${currentCorrect.term}"`, false);
+      }
+    }
+
+    function showFeedback(text, isCorrect) {
+      const feedback = document.getElementById('feedback');
+      feedback.textContent = text;
+      feedback.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+      feedback.style.display = 'block';
+    }
+
+    // New question button
+    const newBtn = document.createElement('button');
+    newBtn.textContent = 'New Question';
+    newBtn.className = 'new-question';
+    newBtn.onclick = showVocab;
+    document.body.appendChild(newBtn);
+
+    // Start with first question
+    showVocab();
   </script>
 
 </body>
